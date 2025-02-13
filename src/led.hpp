@@ -1,6 +1,6 @@
 #include <Arduino.h>
 
-class BreathingLED
+class Led
 {
 private:
     int ledPin;       // Пин светодиода
@@ -12,7 +12,7 @@ private:
 public:
     bool isActive; // Флаг активности
 
-    BreathingLED(int pin, float fadeSpeed)
+    Led(int pin, float fadeSpeed)
     {
         ledPin = pin;
         speed = fadeSpeed;
