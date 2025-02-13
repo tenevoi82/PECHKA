@@ -1,19 +1,36 @@
 #include <Arduino.h>
 
-#include "../include/settings.hpp"
-#include "settings.hpp"
+//outputs
+#define PIN_LED 11
+#define PIN_FAN 10
+#define PIN_CLOUTCH 12
+
+//inputs
+#define PIN_TEMP_OK A1
+#define PIN_FOTO_SENS A2
+#define PIN_BUTTON A3
+
+#include "led.hpp"
+#include"tempsensor.hpp"
+#include"fan.cpp"
+#include "cloutch.hpp"
+
 
 #define MINFAN 35
-#define MAXFAN 255
+#define TIMETOENABLEFAN 15
+
+#define FADE_SPEED 0.05 // Скорость дыхания
+BreathingLED led(PIN_LED, FADE_SPEED); // Создаем объект для управления светодиодом
+TempSensor temp(PIN_TEMP_OK);
+Fan fan(PIN_FAN,MINFAN);
+Cloutch cloutch(PIN_CLOUTCH,60,2);
+
+
 
 void pinsettings() {
     pinMode(PIN_TEMP_OK, INPUT);
     pinMode(PIN_BUTTON, INPUT);
     pinMode(PIN_FOTO_SENS, INPUT);
-
-    pinMode(PIN_FAN, OUTPUT);
-    pinMode(PIN_CLOUTCH, OUTPUT);
-    pinMode(PIN_LED, OUTPUT);
 
     // // Пины D9 и D10 - 4 кГц
     // TCCR1A = 0b00000001;  // 8bit
@@ -26,76 +43,23 @@ void pinsettings() {
 
 void setup() {
     pinsettings();
-    Serial.begin(9600);
-
-    Serial.println("Максимальная яркость на 3 секунд");
-    analogWrite(PIN_LED, 255);
-    // while(true){};
-    delay(1 * 1000);
-
-    Serial.println("Минимальная яркость на 3 секунд");
-    analogWrite(PIN_LED, 0);
-    delay(1 * 1000);
-
-    Serial.println("Тест двигателя:");
-    for (int i = MINFAN; i < 255; i++) {
-        // Serial.print("Запуск двигателя на ");
-        // Serial.print(map(i, MINFAN, MAXFAN, 0, 100));
-        // Serial.print("%");
-        // Serial.print(" = ");
-        // Serial.println(i);
-        analogWrite(PIN_FAN, i);
-        delayMicroseconds(2500);
-    }
-    delay(5000);
-    analogWrite(PIN_FAN, MINFAN);
+    Serial.begin(115200);
 }
 
-unsigned long timer[10];
-int brightness = 0;
-int s = 1;
 
-enum clutchState { open = false,
-                   close = true };
-clutchState d = open;
 
-void Clutch(clutchState j) {
-    digitalWrite(PIN_CLOUTCH, j);
-    Serial.println(j);
-    d = j;
-}
-
-bool sensor = false;
 void loop() {
-    if (digitalRead(PIN_FOTO_SENS) != sensor) {
-        sensor = !sensor;
-        Serial.println(sensor ? "Нет руки" : "Есть рука");
-        if (!sensor) {
-            analogWrite(PIN_FAN, MAXFAN);
-            delay(4 * 1000);
-            analogWrite(PIN_FAN, MINFAN);
-        }
-    }
 
-    if (millis() - timer[0] > 5) {
-        timer[0] = millis();
-        if (brightness == 255) {
-            s = -1;
-        }
-        if (brightness == 30) {
-            s = 1;
-        }
-        brightness += s;
-        analogWrite(PIN_LED, brightness);
+    if(!digitalRead(PIN_FOTO_SENS)){
+        fan.EnebleOnTime(TIMETOENABLEFAN);
     }
-    if (millis() - timer[1] > 10000) {
-        timer[1] = millis();
-        if (d == open) {
-            Serial.println("Закрываю задвижку.");
-            Clutch(close);
-        } else {
-            Serial.println("Открываю задвижку.");
-            Clutch(open);
-        }
+    if(!digitalRead(PIN_BUTTON)){
+        cloutch.OpenOnTime(10);
+    }
+    cloutch.update();
+    fan.update();
+    led.update();
+    if(temp.update()){
+        led.isActive = temp.state;
     }
 }
