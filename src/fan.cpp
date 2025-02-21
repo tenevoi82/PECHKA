@@ -39,7 +39,7 @@ public:
             analogWrite(pin, minSpeed);
             return;
         }
-        if (currentspeed < 255)
+        if (currentspeed < 220)
         {
             currentspeed++;
             analogWrite(pin, currentspeed);

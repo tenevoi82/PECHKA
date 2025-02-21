@@ -25,14 +25,14 @@ public:
 
     void update()
     {
-        if (millis() - last_update < 25)
+        if (millis() - last_update < 5)
             return;
         last_update = millis();
 
         brightness = (sin(angle) + 1) / 2 * 255; // Переводим синус в диапазон (0-255)
-        int setbr= map((int)brightness, 0, 255, 60, 256);
+        int setbr= map((int)brightness, 0, 254, 0, 254);
         analogWrite(ledPin, setbr);
-        if (!isActive && setbr == 255)
+        if (!isActive && setbr == 254)
             return;
         else
         {
